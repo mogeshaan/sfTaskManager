@@ -1,0 +1,269 @@
+<apex:page Controller="Task">
+  <style>
+    .odd {
+      background-color: #ffffff;
+    }
+    .even {
+      background-color: #f8f8f8;
+    }
+    /* 明細全体を囲むDIV */
+    #outerBox {
+      background: #fdfdfd;
+      overflow: auto;
+      width: auto;
+      /*min-height: 600px;*/
+      /*max-width: 1000px;*/
+      border: none;
+      margin: 0;
+    }
+
+    /* ボタンを置くテーブル */
+    #tabCotrolPanel {
+      border-collapse: collapse;
+    }
+
+    /* 明細テーブルを囲むDIV */
+    #tableWrappingBox {
+      background: #fdfdfd;
+      overflow: auto;
+      width: auto;
+      /*min-height: 600px;*/
+      /*max-width: 1000px;*/
+      border: none;
+      margin: 0;
+    }
+
+    /* 明細のテーブル */
+    #tabTaskData {
+      border-collapse: collapse;
+      border: solid 1px #e0e3e5;
+    }
+
+    /* 明細のヘッダ */
+    #tabTaskData th.thHeader {
+      background-color: #f2f3f3;
+      color: #000;
+      border: solid 1px #e0e3e5;
+      font-weight: bold;
+      padding: 2px;
+    }
+    /* 明細のヘッダの曜日 */
+    #tabTaskData th.thSunday,
+    #tabTaskData th.thHoliday {
+      background-color: #FFBDC4;
+    }
+    #tabTaskData th.thSaturday {
+      background-color: #C4F7FF;
+    }
+
+    /* 明細セル全体設定 */
+    #tabTaskData td,
+    #tabTaskData td.tdCalendar {
+      border: solid 1px #e0e3e5;
+      padding: 0;
+    }
+    #tabTaskData input {
+      background-color: transparent;
+      overflow: hidden;
+      margin: 0;
+      padding: 1px;
+      border: solid 1px #c1c1c1;
+    }
+    /* 読み取り専用のINPUT項目 */
+    #tabTaskData input.iptReadOnly {
+      background-color: transparent;
+      border-style: solid;
+      border-color: transparent;
+    }
+
+    /* 個別セル設定 */
+    /* 明細セル 2段ぶち抜き表示 */
+    #tabTaskData td.height100 {
+      height: 40px;
+    }
+    #tabTaskData td.height100 input {
+      height: 36px;
+    }
+
+    /* 数値表示のセル */
+    #tabTaskData td.tdShortNumber {
+      width: 18px;
+    }
+    #tabTaskData td.tdShortNumber input {
+      width: 18px;
+    }
+
+    /* 短い表示のテキスト */
+    #tabTaskData td.widthShort {
+      width: 70px;
+    }
+    #tabTaskData td.widthShort input {
+      width: 68px;
+    }
+
+    /* 標準表示のテキスト */
+    #tabTaskData td.widthNormal {
+      width: 95px;
+    }
+    #tabTaskData td.widthNormal input {
+      width: 93px;
+    }
+
+    /* 長い表示のテキスト */
+    #tabTaskData td.widthWide {
+      width: 150px;
+    }
+    #tabTaskData td.widthWide input {
+      width: 148px;
+    }
+
+    /* ２段表示の部分 */
+    #tabTaskData td.height50 {
+      height: 40;
+    }
+    #tabTaskData td.height50 table {
+      height: 40px;
+      border: none;
+      margin: 0;
+      padding: 0;
+      border-collapse: collapse;
+    }
+    #tabTaskData td.height50 table td {
+      border: none;
+      margin: 0;
+      padding: 0;
+    }
+    #tabTaskData td.height50 table td input {
+      height: 16px;
+      margin: 0;
+    }
+
+    /* ボタン */
+    #tabTaskData button {
+      width: 40px;
+    }
+
+    /* カレンダー部分 */
+    #tabTaskData td.tdCalendar {
+      width: 20px;
+    }
+    #tabTaskData td.tdCalendar table {
+      border-collapse: collapse;
+      border: none;
+      margin: 0;
+      padding: 0;
+    }
+    #tabTaskData td.tdCalendar table td {
+      border: none;
+      margin: 0;
+      padding: 0;
+      width: 20px;
+    }
+    #tabTaskData td.tdCalendar table td div {
+      border: none;
+      margin: 0;
+      padding: 0;
+      width: 20px;
+      height: 20px;
+    }
+
+    /* スケジュール内の日 */
+    #tabTaskData td.tdCalendar table td div.divInSchedule {
+        background: -webkit-gradient(linear, left top, left bottom, color-stop(0.00, #bcffbe), color-stop(0.50, #69ff6d), color-stop(0.50, #34f438), color-stop(1.00, #34f438));
+        background: -webkit-linear-gradient(top, #bcffbe 0%, #69ff6d 50%, #34f438 50%, #34f438 100%);
+        background: -moz-linear-gradient(top, #bcffbe 0%, #69ff6d 50%, #34f438 50%, #34f438 100%);
+        background: -o-linear-gradient(top, #bcffbe 0%, #69ff6d 50%, #34f438 50%, #34f438 100%);
+        background: -ms-linear-gradient(top, #bcffbe 0%, #69ff6d 50%, #34f438 50%, #34f438 100%);
+        background: linear-gradient(to bottom, #bcffbe 0%, #69ff6d 50%, #34f438 50%, #34f438 100%);
+    }
+
+    /* 実績内の日 */
+    #tabTaskData td.tdCalendar table td div.divInAct {
+      background: -webkit-gradient(linear, left top, left bottom, color-stop(0.00, #70b6f2), color-stop(0.50, #54a3ee), color-stop(0.50, #3690f0), color-stop(1.00, #1a62db));
+      background: -webkit-linear-gradient(top, #70b6f2 0%, #54a3ee 50%, #3690f0 50%, #1a62db 100%);
+      background: -moz-linear-gradient(top, #70b6f2 0%, #54a3ee 50%, #3690f0 50%, #1a62db 100%);
+      background: -o-linear-gradient(top, #70b6f2 0%, #54a3ee 50%, #3690f0 50%, #1a62db 100%);
+      background: -ms-linear-gradient(top, #70b6f2 0%, #54a3ee 50%, #3690f0 50%, #1a62db 100%);
+      background: linear-gradient(to bottom, #70b6f2 0%, #54a3ee 50%, #3690f0 50%, #1a62db 100%);
+    }
+
+    /* 休日 */
+    #tabTaskData td.tdCalendar table td div.divHoliday {
+      background-color: #f0f0f0;
+    }
+
+    /* 必須のINPUT項目 */
+    #tableWrappingBox td.tdMandatory {
+      background: #f9f8b2;
+    }
+
+    /* 日数のテーブル */
+    #tabTaskData td.tdSchedule table.tabDaysDisplay {
+      width: 40px;
+      height: 31px;
+      border: none;
+      border-collapse: collapse;
+    }
+    #tabTaskData td.tdSchedule table.tabDaysDisplay td.tdDayDisplayUp input {
+      width: 40px;
+      height: 18px;
+      border-top: none;
+      border-left: none;
+      border-right: none;
+      border-bottom: solid 1px #e0e3e5;
+    }
+    #tabTaskData td.tdSchedule table.tabDaysDisplay td.tdDayDisplayDown input {
+      width: 40px;
+      height: 17px;
+      border: none;
+    }
+
+    /* ユーザのポップアップ周り */
+    /* 起動アイコン */
+    div.divSelectUser {
+      width: 18px;
+      height: 18px;
+      border-style: outset;
+      border-width: 2px;
+      border-color: #e0e3e5;
+      text-align: center;
+    }
+    div.divSelectUser:hover {
+      background-color: #E6FFF6;
+    }
+    /* Selectable */
+    #ulUser .ui-selecting {
+      background: #D6FFF1;
+    }
+    #ulUser .ui-selected {
+      background: #1DE09C;
+      color: white;
+    }
+    #ulUser {
+      list-style-type: none;
+      margin: 0;
+      padding: 0;
+      width: 240px;
+    }
+    #ulUser li {
+      width: 240px;
+      height: 16px;
+      margin: 1px;
+      padding: 3px;
+      font-size: 12px;
+      background: #F5F5F5;
+    }
+    /* 選択リスト */
+    #divUserPopup .pPutSelect {
+      margin: 2px !important;
+    }
+    #divUserPopup .pPutSelect select {
+      width: 210px;
+    }
+    #divUserPopupList {
+      width: 280px;
+      height: 250px;
+      overflow: auto;
+    }
+  </style>
+</apex:page>

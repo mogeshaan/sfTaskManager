@@ -1,0 +1,36 @@
+<apex:page controller="RecordMaker" contenttype="application/vnd.ms-excel;charset=Windows-31J#test1.xls">
+    <apex:variable var="evenOdd" value="1" />
+    <apex:variable var="titleColor" value="#0BA3D6" />
+    <apex:variable var="titleCharColor" value="#ffffff" />
+    <apex:variable var="evenColor" value="#e3faff" />
+    <apex:variable var="oddColor" value="#ffffff" />
+    <style type="text/css">
+#recordTable{!domId} {
+    border-collapse: collapse;
+}
+#recordTable{!domId} td,
+#recordTable{!domId} th{
+    border: solid 1px #666666;
+    font-size: 14px;
+    padding: 2px;
+    font-family: 'MS UI Gothic', 'MS PGothic', 'Hiragino Kaku Gothic Pro', Osaka, Arial, Helvetica, sans-serif;
+}
+    </style>
+    <table id="recordTable{!domId}">
+        <tr class="recordTr">
+            <th style="background-color: {!titleColor};color: {!titleCharColor};">id</th>
+            <th style="background-color: {!titleColor};color: {!titleCharColor};">name</th>
+        </tr>
+    <apex:repeat value="{!dataRecords}" var="datarec">
+        <tr>
+            <td style="background-color: {!IF(evenOdd=='1',evenColor,oddColor)};">
+                <apex:outputField value="{!datarec.id}"/>
+            </td>
+            <td style="background-color: {!IF(evenOdd=='1',evenColor,oddColor)};">
+                <apex:outputField value="{!datarec.name}"/>
+            </td>
+        </tr>
+        <apex:variable var="evenOdd" value="{!IF(evenOdd=='1','0','1')}" />
+    </apex:repeat>
+    </table>
+</apex:page>

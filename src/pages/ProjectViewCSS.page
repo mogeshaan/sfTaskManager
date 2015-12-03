@@ -1,0 +1,199 @@
+<apex:page standardController="Project__c" extensions="ProjectControllerExtension">
+<style>
+.odd  {background-color: #ffffff;}
+.even {background-color: #f8f8f8;}
+/* 明細全体を囲むDIV */
+#outerBox{!domId} {
+    background:#fdfdfd;
+    overflow: auto;
+    width: auto;
+    /*min-height: 600px;*/
+    /*max-width: 1000px;*/
+    border: none;
+    margin: 0px;
+}
+
+/* ボタンを置くテーブル */
+#tabCotrolPanel{!domId} {
+    border-collapse: collapse;
+}
+
+/* 明細テーブルを囲むDIV */
+#tableWrappingBox{!domId} {
+    background:#fdfdfd;
+    overflow: auto;
+    width: auto;
+    /*min-height: 600px;*/
+    /*max-width: 1000px;*/
+    border: none;
+    margin: 0px;
+}
+
+/* 明細のテーブル */
+#tabTaskData{!domId} {
+    border-collapse: collapse;
+    border: solid 1px #e0e3e5;
+}
+
+/* 明細のヘッダ */
+#tabTaskData{!domId} th.thHeader {
+    background-color: #f2f3f3;
+    color: #000;
+    border: solid 1px #e0e3e5;
+    font-weight: bold;
+    padding: 2px;
+}
+/* 明細のヘッダの曜日 */
+#tabTaskData{!domId} th.thSunday,
+#tabTaskData{!domId} th.thHoliday{
+    background-color: #FFBDC4;
+}
+#tabTaskData{!domId} th.thSaturday{
+    background-color: #C4F7FF;
+}
+
+/* 明細セル全体設定 */
+#tabTaskData{!domId} td ,
+#tabTaskData{!domId} td.tdCalendar {
+    border: solid 1px #e0e3e5;
+    padding: 0px;
+}
+#tabTaskData{!domId} input{
+    background-color: transparent;
+    overflow: hidden;
+    margin: 0px;
+    padding: 1px;
+    border: solid 1px #c1c1c1;
+}
+/* 読み取り専用のINPUT項目 */
+#tabTaskData{!domId} input.iptReadOnly {
+    background-color: transparent;
+    border-style: solid;
+    border-color: transparent;
+}
+
+/* 個別セル設定 */
+/* 明細セル 2段ぶち抜き表示 */
+#tabTaskData{!domId} td.height100 {
+    height: 40px;
+}
+#tabTaskData{!domId} td.height100 input {
+    height: 36px;
+}
+
+/* 数値表示のセル */
+#tabTaskData{!domId} td.tdShortNumber {
+    width: 18px;
+}
+#tabTaskData{!domId} td.tdShortNumber input {
+    width: 18px;
+}
+
+/* 短い表示のテキスト */
+#tabTaskData{!domId} td.widthShort {
+    width: 70px;
+}
+#tabTaskData{!domId} td.widthShort input {
+    width: 68px;
+}
+
+/* 標準表示のテキスト */
+#tabTaskData{!domId} td.widthNormal {
+    width: 95px;
+}
+#tabTaskData{!domId} td.widthNormal input {
+    width: 93px;
+}
+
+/* ２段表示の部分 */
+#tabTaskData{!domId} td.height50 {
+    height: 40;
+}
+#tabTaskData{!domId} td.height50 table {
+    height: 40px;
+    border: none;
+    margin: 0px;
+    padding: 0px;
+    border-collapse: collapse;
+}
+#tabTaskData{!domId} td.height50 table td{
+    border: none;
+    margin: 0px;
+    padding: 0px;
+}
+#tabTaskData{!domId} td.height50 table td input{
+    height: 16px;
+    margin: 0px;
+}
+
+/* ボタン */
+#tabTaskData{!domId} button {
+    width: 40px;
+}
+
+/* カレンダー部分 */
+#tabTaskData{!domId} td.tdCalendar {
+    width: 20px;
+}
+#tabTaskData{!domId} td.tdCalendar table{
+    border-collapse: collapse;
+    border: none;
+    margin: 0px;
+    padding: 0px;
+}
+#tabTaskData{!domId} td.tdCalendar table td {
+    border: none;
+    margin: 0px;
+    padding: 0px;
+    width: 20px;
+}
+#tabTaskData{!domId} td.tdCalendar table td div {
+    border: none;
+    margin: 0px;
+    padding: 0px;
+    width: 20px;
+    height: 20px;
+}
+
+/* スケジュール内の日 */
+#tabTaskData{!domId} td.tdCalendar table td div.divInSchedule {
+    background-color: blue;
+}
+
+/* 実績内の日 */
+#tabTaskData{!domId} td.tdCalendar table td div.divInAct {
+    background-color: green;
+}
+
+/* 休日 */
+#tabTaskData{!domId} td.tdCalendar table td div.divHoliday {
+    background-color: #f0f0f0;
+}
+
+/* 必須のINPUT項目 */
+#tableWrappingBox{!domId} td.tdMandatory {
+    background: #f9f8b2;
+}
+
+/* 日数のテーブル */
+#tabTaskData{!domId} td.tdSchedule table.tabDaysDisplay {
+    width: 40px;
+    height: 31px;
+    border: none;
+    border-collapse: collapse;
+}
+#tabTaskData{!domId} td.tdSchedule table.tabDaysDisplay td.tdDayDisplayUp input {
+    width: 40px;
+    height: 18px;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    border-bottom: solid 1px #e0e3e5;
+}
+#tabTaskData{!domId} td.tdSchedule table.tabDaysDisplay td.tdDayDisplayDown input {
+    width: 40px;
+    height: 17px;
+    border: none;
+}
+</style>
+</apex:page>

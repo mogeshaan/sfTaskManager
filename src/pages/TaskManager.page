@@ -1,0 +1,57 @@
+<apex:page Controller="Task">
+  <apex:include pageName="jQueryUi_1_11_4_page"/>
+  <apex:include pageName="TaskManagerCSS"/>
+  <apex:pageBlock id="pageBlockProject" title="{!project.Name}">
+    <p>担当者：{!project.PersonInCharge__c}</p>
+    <p>開始日：
+      <apex:outputtext value="{0, date, yyyy/MM/dd}">
+        <apex:param value="{!project.StartDate__c}"></apex:param>
+      </apex:outputtext>
+    </p>
+    <p>終了日：
+      <apex:outputtext value="{0, date, yyyy/MM/dd}">
+        <apex:param value="{!project.EndDate__c}"></apex:param>
+      </apex:outputtext>
+    </p>
+    <p>休日はスケジュール外：
+      {!IF(project.SkipHoliday__c=true,"○","×")}
+    </p>
+    <p></p>
+  </apex:pageBlock>
+  <apex:pageBlock id="pageBlockTask" title="{!project.Name} のタスク">
+    <span style="color:red;font-weight:bold;">{!errorMessage}</span>
+    <apex:form id="formTasks">
+      <div id="outerBox">
+        <intput id="hidDomId" type="hidden" value=""/>
+        <intput id="hidSkipHoliday" type="hidden" value="{!project.SkipHoliday__c}"/>
+        <apex:inputHidden id="hidTaskData" value="{!taskListString}"/>
+        <table id="tabCotrolPanel">
+          <tr>
+            <td>
+              <apex:commandButton action="{!save}" value="保存"/>
+              <apex:commandButton action="{!quicksave}" value="適用"/>
+              &nbsp;
+              <apex:commandButton action="{!cancel}" value="キャンセル"/>
+            </td>
+          </tr>
+        </table>
+        <div id="tableWrappingBox">
+          <table id="tabTaskData">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div id="divUserPopup">
+        <input type="hidden" id="hidUserReturnRowNum" value="" />
+        <p class="pPutSelect">会社：<select id="selComp"></select></p>
+        <p class="pPutSelect">部署：<select id="selDept"></select></p>
+        <div id="divUserPopupList">
+          <ul id="ulUser"></ul>
+        </div>
+      </div>
+    </apex:form>
+    <span style="color:blue;font-weight:bold;">{!noticeMessage}</span>
+    <apex:include pageName="TaskManagerJS"/>
+  </apex:pageBlock>
+</apex:page>

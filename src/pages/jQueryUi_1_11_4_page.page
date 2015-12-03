@@ -1,0 +1,7 @@
+<apex:page >
+    <meta charset="utf-8" />
+    <apex:stylesheet value="{!URLFOR($Resource.jQueryUI, 'jquery-ui-1.11.4.custom/jquery-ui.css')}" />
+    <apex:includescript value="{!URLFOR($Resource.jQueryUI, 'jquery-ui-1.11.4.custom/external/jquery/jquery.js')}" />
+    <apex:includescript value="{!URLFOR($Resource.jQueryUI, 'jquery-ui-1.11.4.custom/jquery-ui.js')}" />
+    <apex:includescript value="{!URLFOR($Resource.jQueryUI, 'jquery-ui-1.11.4.custom/datepicker-ja.js')}" />
+</apex:page>

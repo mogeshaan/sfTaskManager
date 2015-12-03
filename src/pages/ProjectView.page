@@ -1,0 +1,47 @@
+<apex:page extensions="ProjectControllerExtension" standardController="Project__c">
+  <apex:include pageName="jQueryUi_1_11_4_page"/>
+  <apex:include pageName="ProjectViewCSS"/>
+  <apex:pageBlock id="pageBlock01" title="{!Project__c.Name}">
+    <p>担当者：{!Project__c.PersonInCharge__c}</p>
+    <p>開始日：
+      <apex:outputtext value="{0, date, yyyy/MM/dd}">
+        <apex:param value="{!Project__c.StartDate__c}"></apex:param>
+      </apex:outputtext>
+    </p>
+    <p>終了日：
+      <apex:outputtext value="{0, date, yyyy/MM/dd}">
+        <apex:param value="{!Project__c.EndDate__c}"></apex:param>
+      </apex:outputtext>
+    </p>
+    <p>休日はスケジュール外：
+      {!IF(Project__c.SkipHoliday__c=true,"○","×")}
+    </p>
+    <p></p>
+    <span style="color:red;font-weight:bold;">{!errorMessage}</span>
+    <apex:form id="boxForm01">
+      <div id="outerBox{!domId}">
+        <intput id="hidDomId" type="hidden" value="{!domId}"/>
+        <intput id="hidSkipHoliday" type="hidden" value="{!Project__c.SkipHoliday__c}"/>
+        <apex:inputHidden id="hidTaskData" value="{!taskListString}"/>
+        <table id="tabCotrolPanel{!domId}">
+          <tr>
+            <td>
+              <apex:commandButton action="{!save}" value="保存"/>
+              <apex:commandButton action="{!quicksave}" value="適用"/>
+              &nbsp;
+              <apex:commandButton action="{!cancel}" value="キャンセル"/>
+            </td>
+          </tr>
+        </table>
+        <div id="tableWrappingBox{!domId}">
+          <table id="tabTaskData{!domId}">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </apex:form>
+    <apex:include pageName="ProjectViewJS"/>
+
+  </apex:pageBlock>
+</apex:page>

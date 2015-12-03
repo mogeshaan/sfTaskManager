@@ -1,0 +1,34 @@
+<apex:page controller="MaintainMyselfController">
+  <apex:pageBlock title="私管理">
+          <apex:form >
+      <apex:pageBlockSection >
+          <apex:pageblockTable value="{!maintainMyself}" var="mmitem">
+              <apex:column headerValue="Name">
+              <apex:inputText value="{!mmitem.Name}"/>
+              <apex:inputField value="{!mmitem.Acccount__c}"/>
+              <apex:inputField value="{!mmitem.DateChan__c}"/>
+              </apex:column>
+          </apex:pageblockTable>
+      </apex:pageBlockSection>
+      <input type="button" onClick="loadHoliday();return false;" value="PUSH" />
+          </apex:form>
+  </apex:pageBlock>
+<script type="text/javascript">
+function loadHoliday() {
+    Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.MaintainMyselfController.loadHoliday}',
+        function(result, event){
+            if (event.status) {
+                for (var i=0; i<result.length; i++) {
+                    var id = result[i].Id;
+                    var name = result[i].Name;
+                    alert(result[i]);
+                }
+            } else {
+                alert(event.message);
+            }
+        },
+        {escape: true}
+    );
+}
+</script>
+</apex:page>
