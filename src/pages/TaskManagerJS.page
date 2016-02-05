@@ -1,4 +1,4 @@
-<apex:page Controller="Task">
+<apex:page Controller="TaskManage">
   <script type="text/javascript">
     $j = jQuery.noConflict();
     DATE_TYPE_SCHE = 'SCHE';
@@ -18,7 +18,14 @@
     LIST_VALUE_ALL = '{!condAllKana}';
     HTML_OPTION_COMPALL = '<option class="optComp">' + LIST_VALUE_ALL + '</option>';
     HTML_OPTION_DEPTALL = '<option class="optDept">' + LIST_VALUE_ALL + '</option>';
+    STATUS_NOTYETSTARTED = '未着手';
+    STATUS_INPROCESS = '進行中';
+    STATUS_COMPLETED = '完了済';
+    STATUS_DELAY = '遅延';
 
+    /****************************************
+ * 共通患数
+ ****************************************/
     /**
      * 休日判定
      * @param  Date       pDate
@@ -126,7 +133,7 @@
       }
       var year = getYearWrap(pMonth);
       var month = pMonth.getMonth();
-      return new Date(year, parseInt(month) + 1, 0).getDate();
+      return new Date(year, parseInt(month, 10) + 1, 0).getDate();
     }
 
     /**
@@ -138,7 +145,7 @@
       if (!pDate) {
         return null;
       }
-      var year = parseInt(pDate.getFullYear());
+      var year = parseInt(pDate.getFullYear(), 10);
       if (year < 2000) {
         year += 1900;
       }
@@ -163,8 +170,8 @@
       if (!pMonth) {
         return getThisMonth();
       }
-      var year = parseInt(getYearWrap(pMonth));
-      var month = parseInt(pMonth.getMonth());
+      var year = parseInt(getYearWrap(pMonth), 10);
+      var month = parseInt(pMonth.getMonth(), 10);
       if (month == 11) {
         year++;
         month = 0;
@@ -183,8 +190,8 @@
       if (!pMonth) {
         return getThisMonth();
       }
-      var year = parseInt(getYearWrap(pMonth));
-      var month = parseInt(pMonth.getMonth());
+      var year = parseInt(getYearWrap(pMonth), 10);
+      var month = parseInt(pMonth.getMonth(), 10);
       if (month == 1) {
         year--;
         month = 11;
@@ -203,7 +210,7 @@
       if (!pDate) {
         return null;
       }
-      return getYearWrap(pDate) + "年" + (parseInt(pDate.getMonth() + 1) + "月")
+      return getYearWrap(pDate) + "年" + (parseInt(pDate.getMonth() + 1, 10) + "月")
     }
 
     /**
@@ -216,7 +223,7 @@
         return null;
       }
       var arString = pDateString.split('-');
-      return new Date(arString[0], parseInt(arString[1]) - 1, arString[2]);
+      return new Date(arString[0], parseInt(arString[1], 10) - 1, arString[2]);
     }
 
     /**
@@ -228,7 +235,7 @@
       if (!pDate) {
         return null;
       }
-      return getYearWrap(pDate) + '-' + (parseInt(pDate.getMonth()) + 1) + '-' + pDate.getDate();
+      return getYearWrap(pDate) + '-' + ('0' + (parseInt(pDate.getMonth(), 10) + 1)).slice(-2) + '-' + ('0' + pDate.getDate()).slice(-2);
     }
 
     /**
@@ -257,11 +264,11 @@
         return false;
       }
 
-      var stTime = parseInt(pStartDate.getTime());
-      var edTime = parseInt(endDate.getTime());
+      var stTime = parseInt(pStartDate.getTime(), 10);
+      var edTime = parseInt(endDate.getTime(), 10);
       var iqdTime = 0;
       if (pDateInquiry) {
-        iqdTime = parseInt(pDateInquiry.getTime());
+        iqdTime = parseInt(pDateInquiry.getTime(), 10);
       }
       if (stTime <= iqdTime && edTime >= iqdTime) {
         return true;
@@ -270,11 +277,19 @@
       }
     }
 
-    // 本体処理
+/****************************************
+ * 本体処理
+ ****************************************/
     $j(document).ready(function () {
       // 各種オブジェクト
       var objDiv = $j('#outerBox');
       var taskData = $j('input[id$=hidTaskData]');
+      var errorHidden = $j('input[id$=hidErrorMessage]');
+      if (errorHidden.val() == '') {
+        var errorMessage = '';
+      } else {
+        var errorMessage = JSON.parse(errorHidden.attr('value'));
+      }
       var taskRecData = JSON.parse(taskData.attr('value'));
       var tabTaskDataTHead = $j('#tabTaskData thead');
       var tabTaskDataTbody = $j('#tabTaskData tbody');
@@ -287,23 +302,42 @@
 
       /**
        * バインドの設定
+       * @return void
        */
       function setBind() {
         /* ボタン処理 */
         // 削除
-        $j('button.btnDelete').unbind('click');
-        $j('button.btnDelete').bind('click', function () {
-          var targetRowNum = $j('button.btnDelete').index(this);
+        $j('tr.trDraggable div.btnDelete').unbind('click');
+        $j('tr.trDraggable div.btnDelete').bind('click', function () {
+          if ($j('tr.trDraggable'))
+            var targetRowNum = $j('div.btnDelete').index(this);
           $j('tr.trDraggable').eq(targetRowNum).remove();
           reSetRowNumber();
           remakeJSON();
           return false;
         });
+        // 詳細
+        $j('tr.trDraggable div.btnTaskLink').unbind('click');
+        $j('tr.trDraggable div.btnTaskLink').bind('click', function () {
+          if ($j('tr.trDraggable'))
+            var targetRowNum = $j('div.btnTaskLink').index(this);
+            var idValue = $j('tr.trDraggable').eq(targetRowNum).find('input[name="Id"]').val();
+            if (idValue.length > 0 && idValue != undefined) {
+              // Idがセットされていたらその詳細画面に遷移する
+              //location.href = '/' + idValue;
+              window.open('/' + idValue, '_blank');
+            } else {
+              // Idがない場合はメッセージ
+              alert('このタスクは保存されていません。\n先に「保存」または「適用」をクリックしてデータを保存して下さい。');
+            }
+            reSetRowNumber();
+            remakeJSON();
+            return false;
+        });
         // 追加
-        $j('button.btnAdd').unbind('click');
-        $j('button.btnAdd').bind('click', function () {
-          var targetRowNum = $j('button.btnAdd').index(this);
-          //var targetTr = $j('tr.trDraggable').eq(targetRowNum);
+        $j('tr.trDraggable div.btnAdd').unbind('click');
+        $j('tr.trDraggable div.btnAdd').bind('click', function () {
+          var targetRowNum = $j('div.btnAdd').index(this);
           var copyRec = {
             "EndDateSchedule__c": "",
             "Id": "",
@@ -317,16 +351,17 @@
           };
 
           createRecord(copyRec, targetRowNum);
+          setStatus(targetRowNum + 1); // ステータス設定
           return false;
         });
         // コピー
-        $j('button.btnCopy').unbind('click');
-        $j('button.btnCopy').bind('click', function () {
-          var targetRowNum = $j('button.btnCopy').index(this);
+        $j('tr.trDraggable div.btnCopy').unbind('click');
+        $j('tr.trDraggable div.btnCopy').bind('click', function () {
+          var targetRowNum = $j('div.btnCopy').index(this);
           var targetTr = $j('tr.trDraggable').eq(targetRowNum);
+          // Id以外をコピーする
           var copyRec = {
             "EndDateSchedule__c": targetTr.find('input[name="EndDateSchedule__c"]').val(),
-            "Id": targetTr.find('input[name="Id"]').val(),
             "Name": targetTr.find('input[name="Name"]').val(),
             "PersonInCharge__c": targetTr.find('input[name="PersonInCharge__c"]').val(),
             "StartDateSchedule__c": targetTr.find('input[name="StartDateSchedule__c"]').val(),
@@ -337,15 +372,16 @@
           };
 
           createRecord(copyRec, targetRowNum);
+          setStatus(targetRowNum + 1); // ステータス設定
           return false;
         });
 
         // 担当
-        $j('div.divSelectUser').unbind('click');
-        $j('div.divSelectUser').bind('click', function () {
+        $j('tr.trDraggable div.divSelectUser').unbind('click');
+        $j('tr.trDraggable div.divSelectUser').bind('click', function () {
           var targetRowNum = $j('div.divSelectUser').index(this);
           // ユーザー取得
-          Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.Task.getUser}', function (result, event) {
+          Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.TaskManage.getUser}', function (result, event) {
             if (event.status) {
               // リストに追加
               $j('li.liUser').remove();
@@ -365,7 +401,7 @@
                 if (!$j(this).text() == "") {
 
                   // 名前を担当者にセットする
-                  var targetRowNum = parseInt($j('#hidUserReturnRowNum').val());
+                  var targetRowNum = parseInt($j('#hidUserReturnRowNum').val(), 10);
                   $j('input[name="PersonInCharge__c"]').eq(targetRowNum).val($j(this).text());
                   // IDをHIDDEN項目にセットする
                   $j('input[name="TaskUser__c"]').eq(targetRowNum).val($j(this).find('input[name="TaskUser__c"]').val());
@@ -398,35 +434,39 @@
         });
 
         /* 日付変更時のカレンダー再作成 */
-        $j('input.clStartDateSchedule__c, input.clEndDateSchedule__c, input.clStartDate__c, input.clEndDate__c').unbind('change');
-        $j('input.clStartDateSchedule__c').bind('change', function () {
+        $j('tr.trDraggable input.clStartDateSchedule__c, tr.trDraggable input.clEndDateSchedule__c, tr.trDraggable input.clStartDate__c, tr.trDraggable input.clEndDate__c').unbind('change');
+        $j('tr.trDraggable input.clStartDateSchedule__c').bind('change', function () {
           var rowNum = $j('input.clStartDateSchedule__c').index(this);
-          recalcScheDays(rowNum);
-          remakeCalendar(rowNum);
+          setScheDays(rowNum);
+          makeCalendar(rowNum);
+          setStatus(rowNum);
         });
-        $j('input.clEndDateSchedule__c').bind('change', function () {
+        $j('tr.trDraggable input.clEndDateSchedule__c').bind('change', function () {
           var rowNum = $j('input.clEndDateSchedule__c').index(this);
-          recalcScheDays(rowNum);
-          remakeCalendar(rowNum);
+          setScheDays(rowNum);
+          makeCalendar(rowNum);
+          setStatus(rowNum);
         });
-        $j('input.clStartDate__c').bind('change', function () {
+        $j('tr.trDraggable input.clStartDate__c').bind('change', function () {
           var rowNum = $j('input.clStartDate__c').index(this);
-          recalcActDays(rowNum);
-          remakeCalendar(rowNum);
+          setActDays(rowNum);
+          makeCalendar(rowNum);
+          setStatus(rowNum);
         });
-        $j('input.clEndDate__c').bind('change', function () {
+        $j('tr.trDraggable input.clEndDate__c').bind('change', function () {
           var rowNum = $j('input.clEndDate__c').index(this);
-          recalcActDays(rowNum);
-          remakeCalendar(rowNum);
+          setActDays(rowNum);
+          makeCalendar(rowNum);
+          setStatus(rowNum);
         });
 
         /* DatePicker */
         $j.datepicker.setDefaults($j.datepicker.regional["ja"]);
-        $j('input.iptDatePicker').datepicker({numberOfMonths: 3, showButtonPanel: true, dateFormat: "yy-mm-dd"});
+        $j('tr.trDraggable input.iptDatePicker').datepicker({numberOfMonths: 3, showButtonPanel: true, dateFormat: "yy-mm-dd"});
 
         /* 担当者変更時はHIDDENのIDを消す */
-        $j('input.clPersonInCharge__c').unbind('change');
-        $j('input.clPersonInCharge__c').bind('change', function () {
+        $j('tr.trDraggable input.clPersonInCharge__c').unbind('change');
+        $j('tr.trDraggable input.clPersonInCharge__c').bind('change', function () {
           var rowNum = $j('input.clPersonInCharge__c').index(this);
           $j('input.clTaskUser__c').eq(rowNum).val('');
         });
@@ -449,8 +489,40 @@
       }
 
       /**
+       * 明細行の可視設定
+       * @return void
+       */
+      function setRowVisibility() {
+        // チェック状態に応じて可視設定を変更
+        // 未着手
+        if ($j('#tabTaskData input#cbNotYetStarted').is(':checked')) {
+          $j('#tabTaskData tr.statusNotStarted').show('fast');
+        } else {
+          $j('#tabTaskData tr.statusNotStarted').hide('fast');
+        }
+        // 進行中
+        if ($j('#tabTaskData input#cbInProgress').is(':checked')) {
+          $j('#tabTaskData tr.statusInProgress').show('fast');
+        } else {
+          $j('#tabTaskData tr.statusInProgress').hide('fast');
+        }
+        // 完了済
+        if ($j('#tabTaskData input#cbCompleted').is(':checked')) {
+          $j('#tabTaskData tr.statusCompleted').show('fast');
+        } else {
+          $j('#tabTaskData tr.statusCompleted').hide('fast');
+        }
+        // 遅延
+        if ($j('#tabTaskData input#cbDelay').is(':checked')) {
+          $j('#tabTaskData tr.statusDelay').show('fast');
+        } else {
+          $j('#tabTaskData tr.statusDelay').hide('fast');
+        }
+      }
+
+      /**
        * JSONの再作成
-       * @return {void}
+       * @return void
        */
       function remakeJSON() {
         var objTr = $j('tr.trDraggable');
@@ -572,11 +644,11 @@
       }
 
       /**
-       * 予定日数の再セット
+       * 予定日数のセット
        * @param  int pRowNumber [description]
        * @return void
        */
-      function recalcScheDays(pRowNumber) {
+      function setScheDays(pRowNumber) {
         if (!isFinite(pRowNumber)) {
           return;
         }
@@ -587,11 +659,11 @@
       }
 
       /**
-       * 実績日数の再セット
+       * 実績日数のセット
        * @param  int pRowNumber
        * @return void
        */
-      function recalcActDays(pRowNumber) {
+      function setActDays(pRowNumber) {
         if (!isFinite(pRowNumber)) {
           return;
         }
@@ -602,11 +674,11 @@
       }
 
       /**
-       * カレンダーHTMLの再作成
+       * カレンダーHTMLの作成
        * @param  int pRowNumber 行番号
        * @return String         HTML
        */
-      function remakeCalendar(pRowNumber) {
+      function makeCalendar(pRowNumber) {
         if (!isFinite(pRowNumber)) {
           return;
         }
@@ -621,6 +693,62 @@
 
         // 新しいHTMLを作成
         $j('tr.trDraggable').eq(pRowNumber).append(getCalendarHtml(scheStartDate, scheEndDate, actStartDate, actSEndDate, pRowNumber));
+      }
+
+      /**
+       * ステータス設定
+       * @param int pRowNumber 行番号
+       */
+      function setStatus(pRowNumber) {
+        if (!isFinite(pRowNumber)) {
+          return;
+        }
+        // ステータス欄取得
+        var statusField = $j('input.iptStatus').eq(pRowNumber);
+        // tr取得
+        var targetTr = $j('tr.trDraggable').eq(pRowNumber);
+        // 日付取得
+        var scheStartDate = $j('input.clStartDateSchedule__c').eq(pRowNumber).val();
+        var scheEndDate = $j('input.clEndDateSchedule__c').eq(pRowNumber).val();
+        var actStartDate = $j('input.clStartDate__c').eq(pRowNumber).val();
+        var actSEndDate = $j('input.clEndDate__c').eq(pRowNumber).val();
+
+        // 現在のClassを外す
+        statusField.removeClass('statusNotStarted');
+        statusField.removeClass('statusInProgress');
+        statusField.removeClass('statusCompleted');
+        statusField.removeClass('statusDelay');
+        targetTr.removeClass('statusNotStarted');
+        targetTr.removeClass('statusInProgress');
+        targetTr.removeClass('statusCompleted');
+        targetTr.removeClass('statusDelay');
+
+        if (scheStartDate.trim().length == 0 || scheEndDate.trim().length == 0) {
+          // 予定の開始終了のいずれかが未入力であれば未着手
+          statusField.val(STATUS_NOTYETSTARTED).addClass('statusNotStarted');
+          targetTr.addClass('statusNotStarted');
+        } else if (actSEndDate.trim().length > 0) {
+          // 実績終了が入力済みの場合は完了
+          statusField.val(STATUS_COMPLETED).addClass('statusCompleted');
+          targetTr.addClass('statusCompleted');
+        } else if (getDateFromString(getFormattedDate(new Date())) > getDateFromString(scheStartDate) && actStartDate.trim().length == 0) {
+          // 予定開始日を過ぎていて実績開始が未入力の場合は遅延
+          statusField.val(STATUS_DELAY).addClass('statusDelay');
+          targetTr.addClass('statusDelay');
+        } else if (getDateFromString(getFormattedDate(new Date())) > getDateFromString(scheEndDate) && actSEndDate.trim().length == 0) {
+          // 予定終了日を過ぎていて実績終了が未入力の場合は遅延
+          statusField.val(STATUS_DELAY).addClass('statusDelay');
+          targetTr.addClass('statusDelay');
+        } else if (actStartDate.trim().length > 0) {
+          // 実績開始が入力済みで実績終了が未入力の場合は進行中
+          statusField.val(STATUS_INPROCESS).addClass('statusInProgress');
+          targetTr.addClass('statusInProgress');
+        } else {
+          // 実績開始開始が未入力の場合は未着手
+          statusField.val(STATUS_NOTYETSTARTED).addClass('statusNotStarted');
+          targetTr.addClass('statusNotStarted');
+        }
+
       }
 
       /**
@@ -641,60 +769,78 @@
         recHtml += '<td class="' + recType + '">';
         recHtml += '<span class="ui-icon ui-icon-arrowthick-2-n-s"></span>';
         recHtml += '</td>';
-        // ボタン
-        recHtml += '<td class="' + recType + '">';
-        recHtml += '<button class="btnDelete">削除</button>';
+        // ボタン、ステータス
+        recHtml += '<td class="' + recType + ' height50 widthButton">';
+        recHtml += '<table class="tabButtonStatus"><tr>';
+        recHtml += '<td class="tdButtonDisplay">';
+        recHtml += '<div class="divSmallButton btnDelete ui-corner-all ui-icon ui-icon-trash" title="削除"/>';
         recHtml += '</td>';
-        recHtml += '<td class="' + recType + '">';
-        recHtml += '<button class="btnAdd">追加</button>';
+        recHtml += '<td class="tdButtonDisplay">';
+        recHtml += '<div class="divSmallButton btnTaskLink ui-corner-all ui-icon ui-icon-extlink" title="詳細" />';
         recHtml += '</td>';
-        recHtml += '<td class="' + recType + '">';
-        recHtml += '<button class="btnCopy">複製</button>';
+        recHtml += '<tr>';
+        recHtml += '<td class="tdButtonDisplay">';
+        recHtml += '<div class="divSmallButton btnAdd ui-corner-all ui-icon ui-icon-plus" title="追加" />';
+        recHtml += '</td>';
+        recHtml += '<td class="tdButtonDisplay">';
+        recHtml += '<div class="divSmallButton btnCopy ui-corner-all ui-icon ui-icon-copy" title="複製" />';
+        recHtml += '</td></tr></table>';
         recHtml += '</td>';
         // No.
         recHtml += '<td class="' + recType + ' height100 tdShortNumber">';
-        recHtml += '<input type="text" readonly="true" name="TaskNumber__c" class="clTaskNumber__c iptReadOnly" value="' + pRecData.TaskNumber__c + '" />';
+        recHtml += '<input type="text" readonly="true" name="TaskNumber__c" class="clTaskNumber__c iptReadOnly iptCenter" value="' + pRecData.TaskNumber__c + '" />';
+        recHtml += '<input type="hidden" name="Id" class="clId" value="' + (pRecData.Id == undefined
+          ? ''
+          : pRecData.Id) + '" />';
+        recHtml += '</td>';
+        recHtml += '</td>';
+        // ステータス
+        recHtml += '<td class="' + recType + ' height100 widthNormal">';
+        recHtml += '<input type="text" readonly="true" class="iptStatus ui-corner-all" value="" />';
         recHtml += '</td>';
         // タスク名
         recHtml += '<td class="' + recType + ' height100 widthWide tdMandatory">';
-        recHtml += '<input type="text" name="Name" class="clName iptMandatory" value="' + pRecData.Name + '" />';
+        recHtml += '<input type="text" name="Name" class="clName iptMandatory ui-corner-all" value="' + pRecData.Name + '" />';
         recHtml += '</td>';
         // 担当者
         recHtml += '<td class="' + recType + ' height100 widthNormal tdMandatory">';
-        recHtml += '<input type="text" name="PersonInCharge__c" class="clPersonInCharge__c iptMandatory" value="' + pRecData.PersonInCharge__c + '" />';
+        recHtml += '<input type="text" name="PersonInCharge__c" class="clPersonInCharge__c iptMandatory ui-corner-all" value="' + pRecData.PersonInCharge__c + '" />';
         recHtml += '<input type="hidden" name="TaskUser__c" class="clTaskUser__c" value="' + (pRecData.TaskUser__c == undefined
           ? ''
           : pRecData.TaskUser__c) + '" />';
         recHtml += '</td>';
         // 担当者ポップアップボタン
         recHtml += '<td class="' + recType + '">';
-        recHtml += '<div class="divSelectUser ui-icon ui-icon-person ui-corner-all">担当</div>';
+        recHtml += '<div class="divSmallButton divSelectUser ui-icon ui-icon-person ui-corner-all" title="ユーザから選択">担当</div>';
         recHtml += '</td>';
         // 開始日
         recHtml += '<td class="' + recType + ' height50 widthNormal">';
         recHtml += '<table class="tabDateDisplay"><tr><td class="tdDateDisplay tdMandatory">'
-        recHtml += '<input type="text" name="StartDateSchedule__c" class="clStartDateSchedule__c iptMandatory iptDatePicker" value="' + pRecData.StartDateSchedule__c + '" />';
+        recHtml += '<input type="text" name="StartDateSchedule__c" class="clStartDateSchedule__c iptMandatory iptDatePicker ui-corner-all" value="' + pRecData.StartDateSchedule__c + '" />';
         recHtml += '</td></tr><tr><td class="tdDateDisplay">';
-        recHtml += '<input type="text" name="StartDate__c" class="clStartDate__c iptDatePicker" value="' + (pRecData.StartDate__c == undefined
+        recHtml += '<input type="text" name="StartDate__c" class="clStartDate__c iptDatePicker ui-corner-all" value="' + (pRecData.StartDate__c == undefined
           ? ''
           : pRecData.StartDate__c) + '" />';
         recHtml += '</td></tr></table>';
+        recHtml += '</td>';
         // 終了日
         recHtml += '<td class="' + recType + ' height50 widthNormal">';
         recHtml += '<table class="tabDateDisplay"><tr><td class="tdDateDisplay tdMandatory">'
-        recHtml += '<input type="text" name="EndDateSchedule__c" class="clEndDateSchedule__c iptMandatory iptDatePicker" value="' + pRecData.EndDateSchedule__c + '" />';
+        recHtml += '<input type="text" name="EndDateSchedule__c" class="clEndDateSchedule__c iptMandatory iptDatePicker ui-corner-all" value="' + pRecData.EndDateSchedule__c + '" />';
         recHtml += '</td></tr><tr><td class="tdDateDisplay">';
-        recHtml += '<input type="text" name="EndDate__c" class="clEndDate__c iptDatePicker" value="' + (pRecData.EndDate__c == undefined
+        recHtml += '<input type="text" name="EndDate__c" class="clEndDate__c iptDatePicker ui-corner-all" value="' + (pRecData.EndDate__c == undefined
           ? ''
           : pRecData.EndDate__c) + '" />';
         recHtml += '</td></tr></table>';
+        recHtml += '</td>';
         // 日数
         recHtml += '<td class="' + recType + ' height50 tdShortNumber">';
         recHtml += '<table class="tabDaysDisplay"><tr><td class="tdDayDisplayUp">'
-        recHtml += '<input type="text" name="scheDays" readonly="true" class="iptReadOnly" value="' + calcDays(getDateFromString(pRecData.StartDateSchedule__c), getDateFromString(pRecData.EndDateSchedule__c)) + '" />';
+        recHtml += '<input type="text" name="scheDays" readonly="true" class="iptReadOnly iptCenter" value="' + calcDays(getDateFromString(pRecData.StartDateSchedule__c), getDateFromString(pRecData.EndDateSchedule__c)) + '" />';
         recHtml += '</td></tr><tr><td class="tdDayDisplayDown">';
-        recHtml += '<input type="text" name="actDays" readonly="true" class="iptReadOnly" value="' + calcDays(getDateFromString(pRecData.StartDate__c), getDateFromString(pRecData.EndDate__c)) + '" />';
+        recHtml += '<input type="text" name="actDays" readonly="true" class="iptReadOnly iptCenter" value="' + calcDays(getDateFromString(pRecData.StartDate__c), getDateFromString(pRecData.EndDate__c)) + '" />';
         recHtml += '</td></tr></table>';
+        recHtml += '</td>';
 
         // カレンダー
         recHtml += getCalendarHtml(pRecData.StartDateSchedule__c, pRecData.EndDateSchedule__c, pRecData.StartDate__c, pRecData.EndDate__c);
@@ -724,7 +870,7 @@
         // カレンダー上開始月
         calHdHtml += '<th class="' + recTypeHeader + '" colspan="' + getDaysInMonth(startMonth) + '">';
         calHdHtml += '<button class="btnPrevMonth">&lt;</button>';
-        calHdHtml += '<span class="spanDisplayMonth">' + getYearMonthString(startMonth) + '</span>';
+        calHdHtml += '&nbsp;<span class="spanDisplayMonth">' + getYearMonthString(startMonth) + '</span>&nbsp;';
         calHdHtml += '<button class="btnNextMonth">&gt;</button>';
         calHdHtml += '&nbsp;<button class="btnThisMonth">今月</button>';
         calHdHtml += '</th>';
@@ -799,7 +945,7 @@
        */
       function commonMoveMonthAction() {
         // 休日取得
-        Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.Task.getHoliday}', getFormattedDate(startMonth), function (result, event) {
+        Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.TaskManage.getHoliday}', getFormattedDate(startMonth), function (result, event) {
           if (event.status) {
             arHolidays = Array();
             for (var i = 0; i < result.length; i++) {
@@ -815,7 +961,7 @@
             // カレンダー明細
             $j('tr.trDraggable').each(function () {
               var rowNum = $j('tr.trDraggable').index(this);
-              remakeCalendar(rowNum);
+              makeCalendar(rowNum);
             });
           } else {
             alert(event.message);
@@ -879,8 +1025,11 @@
         // ヘッダ上段
         recHtml += '<tr class="trHeadeTop">';
         // タスクの上
-        recHtml += '<th class="' + recTypeHeader + '" colspan="11">';
-        recHtml += 'タスク';
+        recHtml += '<th class="' + recTypeHeader + '" colspan="10">';
+        recHtml += '<label><input type="checkBox" id="cbNotYetStarted" class="cbShowStatus" checked="true"/>' + STATUS_NOTYETSTARTED + '</label>&nbsp;&nbsp;';
+        recHtml += '<label><input type="checkBox" id="cbInProgress" class="cbShowStatus" checked="true"/>' + STATUS_INPROCESS + '</label>&nbsp;&nbsp;';
+        recHtml += '<label><input type="checkBox" id="cbCompleted" class="cbShowStatus" checked="true"/>' + STATUS_COMPLETED + '</label>&nbsp;&nbsp;';
+        recHtml += '<label><input type="checkBox" id="cbDelay" class="cbShowStatus" checked="true"/>' + STATUS_DELAY + '</label>';
         recHtml += '</th>';
         recHtml += '</tr>';
         // ヘッダ下段
@@ -888,12 +1037,17 @@
         // 移動アイコン
         recHtml += recHtmlHeaderTh;
         recHtml += '</th>';
-        // ボタン（3セル結合）
-        recHtml += '<th class="' + recTypeHeader + '" colspan="3">';
+        // ボタン
+        recHtml += recHtmlHeaderTh;
+        recHtml += '操作';
         recHtml += '</th>';
         // No.
         recHtml += recHtmlHeaderTh;
         recHtml += 'No.';
+        recHtml += '</th>';
+        // ステータス
+        recHtml += recHtmlHeaderTh;
+        recHtml += 'ステータス';
         recHtml += '</th>';
         // タスク名
         recHtml += recHtmlHeaderTh;
@@ -951,7 +1105,7 @@
        */
       function reloadUser() {
         var cond = $j('#selComp').val() + ":" + $j('#selDept').val();
-        Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.Task.getUserByDept}', cond, function (result, event) {
+        Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.TaskManage.getUserByDept}', cond, function (result, event) {
           if (event.status) {
             $j('li.liUser').remove();
             for (var i = 0; i < result.length; i++) {
@@ -968,7 +1122,7 @@
               if (!$j(this).text() == "") {
 
                 // 名前を担当者にセットする
-                var targetRowNum = parseInt($j('#hidUserReturnRowNum').val());
+                var targetRowNum = parseInt($j('#hidUserReturnRowNum').val(), 10);
                 $j('input[name="PersonInCharge__c"]').eq(targetRowNum).val($j(this).text());
                 // IDをHIDDEN項目にセットする
                 $j('input[name="TaskUser__c"]').eq(targetRowNum).val($j(this).find('input[name="TaskUser__c"]').val());
@@ -984,11 +1138,11 @@
         });
       }
 
-      /**
-       * 本体処理はここから
-       */
+/****************************************
+ * 初期処理
+ ****************************************/
       // 休日取得
-      Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.Task.getHoliday}', getFormattedDate(startMonth), function (result, event) {
+      Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.TaskManage.getHoliday}', getFormattedDate(startMonth), function (result, event) {
         if (event.status) {
           arHolidays = Array();
           for (var i = 0; i < result.length; i++) {
@@ -1008,13 +1162,26 @@
           // 明細
           for (var i = 0; i < taskRecData.length; i++) {
             createRecord(taskRecData[i]);
+            setStatus(i); // ステータス設定
           }
 
           // ここでJSONを再作成しておく
           remakeJSON();
 
+          // エラーメッセージがある場合は表示する
+          $j('#spanErrorMessage').find('p').remove();
+          if (errorMessage != "" && errorMessage != undefined) {
+            for (var rowkey in errorMessage) {
+              var messPhrase = (parseInt(rowkey, 10) + 1) + "行目 ";
+              for (var itemkey in errorMessage[rowkey]) {
+                messPhrase += itemkey + ":" + errorMessage[rowkey][itemkey] + " ";
+              }
+              $j('#spanErrorMessage').append('<p class="spanErrorMessage">' + messPhrase + '</p>');
+            }
+          }
+
           // 明細0の場合は空の行を作成する
-          if (taskRecData = "" || taskRecData.length == 0) {
+          if (taskRecData == "" || taskRecData.length == 0) {
             var copyRec = {
               "EndDateSchedule__c": "",
               "Id": "",
@@ -1043,10 +1210,36 @@
               remakeJSON();
             }
           });
+          tabTaskDataTbody.bind('click.sortable mousedown.sortable', function (ev) {
+            ev.target.focus();
+          });
           tabTaskDataTbody.disableSelection();
 
+          /* 行表示のチェックボックス */
+          var objTr = $j('tr.trDraggable');
+          // 未着手
+          $j('#tabTaskData input#cbNotYetStarted').unbind('change');
+          $j('#tabTaskData input#cbNotYetStarted').bind('change', function () {
+            setRowVisibility();
+          });
+          // 進行中
+          $j('#tabTaskData input#cbInProgress').unbind('change');
+          $j('#tabTaskData input#cbInProgress').bind('change', function () {
+            setRowVisibility();
+          });
+          // 完了済
+          $j('#tabTaskData input#cbCompleted').unbind('change');
+          $j('#tabTaskData input#cbCompleted').bind('change', function () {
+            setRowVisibility();
+          });
+          // 遅延
+          $j('#tabTaskData input#cbDelay').unbind('change');
+          $j('#tabTaskData input#cbDelay').bind('change', function () {
+            setRowVisibility();
+          });
+
           /* 会社取得 */
-          Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.Task.getDepartment}', function (result, event) {
+          Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.TaskManage.getDepartment}', function (result, event) {
             if (event.status) {
               arCompany = Array();
               arDepartment = Array();
@@ -1085,6 +1278,7 @@
               });
 
               /* ポップアップ用DIVの設定 */
+              $j("#divUserPopup").css('visibility', 'visible');
               $j("#divUserPopup").dialog({
                 modal: true,
                 autoOpen: false,

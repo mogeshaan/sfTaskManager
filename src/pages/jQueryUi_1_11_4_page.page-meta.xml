@@ -5,14 +5,4 @@
     <confirmationTokenRequired>false</confirmationTokenRequired>
     <description>jQueryUi1.11.4 インクルード用ページ</description>
     <label>jQueryUi_1_11_4_page</label>
-    <packageVersions>
-        <majorNumber>1</majorNumber>
-        <minorNumber>10</minorNumber>
-        <namespace>sf_chttr_apps</namespace>
-    </packageVersions>
-    <packageVersions>
-        <majorNumber>1</majorNumber>
-        <minorNumber>6</minorNumber>
-        <namespace>sf_com_apps</namespace>
-    </packageVersions>
 </ApexPage>

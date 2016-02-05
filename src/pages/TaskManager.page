@@ -1,4 +1,4 @@
-<apex:page Controller="Task">
+<apex:page Controller="TaskManage">
   <apex:include pageName="jQueryUi_1_11_4_page"/>
   <apex:include pageName="TaskManagerCSS"/>
   <apex:pageBlock id="pageBlockProject" title="{!project.Name}">
@@ -19,12 +19,13 @@
     <p></p>
   </apex:pageBlock>
   <apex:pageBlock id="pageBlockTask" title="{!project.Name} のタスク">
-    <span style="color:red;font-weight:bold;">{!errorMessage}</span>
+    <span id="spanErrorMessage" style="color:red;font-weight:bold;"></span>
     <apex:form id="formTasks">
       <div id="outerBox">
         <intput id="hidDomId" type="hidden" value=""/>
         <intput id="hidSkipHoliday" type="hidden" value="{!project.SkipHoliday__c}"/>
         <apex:inputHidden id="hidTaskData" value="{!taskListString}"/>
+        <apex:inputHidden id="hidErrorMessage" value="{!errorMessage}"/>
         <table id="tabCotrolPanel">
           <tr>
             <td>
@@ -42,7 +43,7 @@
           </table>
         </div>
       </div>
-      <div id="divUserPopup">
+      <div id="divUserPopup" style="visibility: hidden;">
         <input type="hidden" id="hidUserReturnRowNum" value="" />
         <p class="pPutSelect">会社：<select id="selComp"></select></p>
         <p class="pPutSelect">部署：<select id="selDept"></select></p>

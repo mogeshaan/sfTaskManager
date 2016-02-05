@@ -1,4 +1,4 @@
-<apex:page Controller="Task">
+<apex:page Controller="TaskManage">
   <style>
     .odd {
       background-color: #ffffff;
@@ -77,7 +77,7 @@
     }
 
     /* 個別セル設定 */
-    /* 明細セル 2段ぶち抜き表示 */
+    /* 明細セル 2段抜き表示 */
     #tabTaskData td.height100 {
       height: 40px;
     }
@@ -117,6 +117,11 @@
       width: 148px;
     }
 
+    /* センタリングするテキスト */
+    #tabTaskData input.iptCenter {
+      text-align: center;
+    }
+
     /* ２段表示の部分 */
     #tabTaskData td.height50 {
       height: 40;
@@ -137,28 +142,92 @@
       height: 16px;
       margin: 0;
     }
+    /* ステータス */
+    #tabTaskData input.iptStatus {
+      border: none;
+      text-align: center;
+    }
+    #tabTaskData input.statusNotStarted {
+      /* 未着手 */
+      height: 38px !important;
+      background: -webkit-gradient(linear, left top, left bottom, color-stop(0.00, #fff), color-stop(1.00, #cecece));
+      background: -webkit-linear-gradient(#fff, #cecece);
+      background: -moz-linear-gradient(#fff, #cecece);
+      background: -o-linear-gradient(#fff, #cecece);
+      background: -ms-linear-gradient(#fff, #cecece);
+      background: linear-gradient(#fff, #cecece);
+    }
+    #tabTaskData input.statusInProgress {
+      /* 進行中 */
+      height: 38px !important;
+      color: white;
+      background: -webkit-gradient(linear, left top, left bottom, color-stop(0.00, #42ff39), color-stop(1.00, #00a12d));
+      background: -webkit-linear-gradient(#42ff39, #00a12d);
+      background: -moz-linear-gradient(#42ff39, #00a12d);
+      background: -o-linear-gradient(#42ff39, #00a12d);
+      background: -ms-linear-gradient(#42ff39, #00a12d);
+      background: linear-gradient(#42ff39, #00a12d);
+    }
+    #tabTaskData input.statusCompleted {
+      /* 完了済 */
+      height: 38px !important;
+      color: white;
+      background: -webkit-gradient(linear, left top, left bottom, color-stop(0.00, #2c7bff), color-stop(1.00, #021ecd));
+      background: -webkit-linear-gradient(#2c7bff, #021ecd);
+      background: -moz-linear-gradient(#2c7bff, #021ecd);
+      background: -o-linear-gradient(#2c7bff, #021ecd);
+      background: -ms-linear-gradient(#2c7bff, #021ecd);
+      background: linear-gradient(#2c7bff, #021ecd);
+    }
+    #tabTaskData input.statusDelay {
+      /* 遅延 */
+      height: 38px !important;
+      color: white;
+      background: -webkit-gradient(linear, left top, left bottom, color-stop(0.00, #ff0001), color-stop(1.00, #8f0202));
+      background: -webkit-linear-gradient(#ff0001, #8f0202);
+      background: -moz-linear-gradient(#ff0001, #8f0202);
+      background: -o-linear-gradient(#ff0001, #8f0202);
+      background: -ms-linear-gradient(#ff0001, #8f0202);
+      background: linear-gradient(#ff0001, #8f0202);
+    }
 
     /* ボタン */
     #tabTaskData button {
       width: 40px;
     }
+    /* ポップアップ起動アイコン */
+    #tabTaskData div.divSmallButton {
+      width: 18px;
+      height: 18px;
+      border-style: outset;
+      border-width: 1px;
+      border-color: #e0e3e5;
+      text-align: center;
+    }
+    #tabTaskData div.divSmallButton:hover {
+      background-color: #E6FFF6;
+    }
 
     /* カレンダー部分 */
+    /* 全体 */
     #tabTaskData td.tdCalendar {
       width: 20px;
     }
+    /* 明細の各マス内のテーブル */
     #tabTaskData td.tdCalendar table {
       border-collapse: collapse;
       border: none;
       margin: 0;
       padding: 0;
     }
+    /* 明細の各マス内のテーブルの予実のセル */
     #tabTaskData td.tdCalendar table td {
       border: none;
       margin: 0;
       padding: 0;
       width: 20px;
     }
+    /* 明細の各マス内のテーブルの予実のセルにあるDIV */
     #tabTaskData td.tdCalendar table td div {
       border: none;
       margin: 0;
@@ -166,8 +235,7 @@
       width: 20px;
       height: 20px;
     }
-
-    /* スケジュール内の日 */
+    /* 予実のセルにあるDIV-スケジュール内の日 */
     #tabTaskData td.tdCalendar table td div.divInSchedule {
         background: -webkit-gradient(linear, left top, left bottom, color-stop(0.00, #bcffbe), color-stop(0.50, #69ff6d), color-stop(0.50, #34f438), color-stop(1.00, #34f438));
         background: -webkit-linear-gradient(top, #bcffbe 0%, #69ff6d 50%, #34f438 50%, #34f438 100%);
@@ -177,7 +245,7 @@
         background: linear-gradient(to bottom, #bcffbe 0%, #69ff6d 50%, #34f438 50%, #34f438 100%);
     }
 
-    /* 実績内の日 */
+    /* 予実のセルにあるDIV-実績内の日 */
     #tabTaskData td.tdCalendar table td div.divInAct {
       background: -webkit-gradient(linear, left top, left bottom, color-stop(0.00, #70b6f2), color-stop(0.50, #54a3ee), color-stop(0.50, #3690f0), color-stop(1.00, #1a62db));
       background: -webkit-linear-gradient(top, #70b6f2 0%, #54a3ee 50%, #3690f0 50%, #1a62db 100%);
@@ -193,19 +261,24 @@
     }
 
     /* 必須のINPUT項目 */
-    #tableWrappingBox td.tdMandatory {
-      background: #f9f8b2;
+    #tableWrappingBox td.tdMandatory input {
+      background: -webkit-gradient(linear, left top, left bottom, color-stop(1.00, #f8f99f), color-stop(0.00, #fbfbd5));
+      background: -webkit-linear-gradient(#fbfbd5, #f8f99f);
+      background: -moz-linear-gradient(#fbfbd5, #f8f99f);
+      background: -o-linear-gradient(#fbfbd5, #f8f99f);
+      background: -ms-linear-gradient(#fbfbd5, #f8f99f);
+      background: linear-gradient(#fbfbd5, #f8f99f);
     }
 
     /* 日数のテーブル */
     #tabTaskData td.tdSchedule table.tabDaysDisplay {
-      width: 40px;
+      width: 30px;
       height: 31px;
       border: none;
       border-collapse: collapse;
     }
     #tabTaskData td.tdSchedule table.tabDaysDisplay td.tdDayDisplayUp input {
-      width: 40px;
+      width: 30px;
       height: 18px;
       border-top: none;
       border-left: none;
@@ -213,24 +286,12 @@
       border-bottom: solid 1px #e0e3e5;
     }
     #tabTaskData td.tdSchedule table.tabDaysDisplay td.tdDayDisplayDown input {
-      width: 40px;
+      width: 30px;
       height: 17px;
       border: none;
     }
 
     /* ユーザのポップアップ周り */
-    /* 起動アイコン */
-    div.divSelectUser {
-      width: 18px;
-      height: 18px;
-      border-style: outset;
-      border-width: 2px;
-      border-color: #e0e3e5;
-      text-align: center;
-    }
-    div.divSelectUser:hover {
-      background-color: #E6FFF6;
-    }
     /* Selectable */
     #ulUser .ui-selecting {
       background: #D6FFF1;
